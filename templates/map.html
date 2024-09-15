@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Connections Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <style>
+        #map { height: 100vh; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        var map = L.map('map').setView([0, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        function fetchConnections() {
+            fetch('/connections')
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(connection => {
+                        if (connection.source.location && connection.destination.location) {
+                            var sourceCoords = connection.source.location.split(',').map(Number);
+                            var destCoords = connection.destination.location.split(',').map(Number);
+                            
+                            if (sourceCoords.length === 2 && destCoords.length === 2) {
+                                L.circleMarker(sourceCoords, {color: 'red', radius: 5}).addTo(map)
+                                    .bindPopup(`Source: ${connection.source.ip}<br>Country: ${connection.source.country}`);
+                                
+                                L.circleMarker(destCoords, {color: 'blue', radius: 5}).addTo(map)
+                                    .bindPopup(`Destination: ${connection.destination.ip}<br>Country: ${connection.destination.country}`);
+                                
+                                L.polyline([sourceCoords, destCoords], {color: 'green', weight: 2}).addTo(map);
+                            }
+                        }
+                    });
+                });
+        }
+
+        // Fetch connections every 10 seconds
+        fetchConnections();
+        setInterval(fetchConnections, 10000);
+    </script>
+</body>
+</html>
